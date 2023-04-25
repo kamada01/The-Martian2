@@ -16,9 +16,18 @@ public class PlayerMovement: MonoBehaviour
 
     public SpriteRenderer spriteRenderer;
 
+    public Camera cam;
+    Vector2 mousePosition;
+
+    public Inventory inventory;
+
+    public GameObject Hand;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        inventory.UsedItem += Inventory_UsedItem;
+        inventory.RemovedItem += Inventory_RemovedItem;
     }
 
     private void Update()
@@ -75,27 +84,56 @@ public class PlayerMovement: MonoBehaviour
         movement.x = Input.GetAxisRaw("Horizontal");
         movement.y = Input.GetAxisRaw("Vertical");
     }
-
-    void OnCollisionEnter2D(Collision2D collision)
-{
-    if (collision.gameObject.CompareTag("Wall"))
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        wallContactCount++;
-        wallNormal = collision.contacts[0].normal;
-    }
-}
-
-void OnCollisionExit2D(Collision2D collision)
-{
-    if (collision.gameObject.CompareTag("Wall"))
-    {
-        wallContactCount--;
-        if (wallContactCount <= 0)
+        InventoryItem item = collision.GetComponent<InventoryItem>();
+        if (item != null)
         {
-            wallContactCount = 0;
-            wallNormal = Vector2.zero;
+            inventory.AddItem(item);
         }
     }
-}
 
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Wall"))
+        {
+            wallContactCount++;
+            wallNormal = collision.contacts[0].normal;
+        }
+    }
+
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Wall"))
+        {
+            wallContactCount--;
+            if (wallContactCount <= 0)
+            {
+                wallContactCount = 0;
+                wallNormal = Vector2.zero;
+            }
+        } 
+    }
+
+    private void Inventory_RemovedItem(object sender, InventoryEventArgs e)
+    {
+        InventoryItem item = e.Item;
+
+        // put item into hand
+        GameObject goItem = (item as MonoBehaviour).gameObject;
+        goItem.SetActive(true);
+
+        goItem.transform.parent = null;
+    }
+
+    private void Inventory_UsedItem(object sender, InventoryEventArgs e)
+    {
+        InventoryItem item = e.Item;
+
+        // put item into hand
+        GameObject goItem = (item as MonoBehaviour).gameObject;
+        goItem.SetActive(true);
+
+        goItem.transform.parent = Hand.transform;
+    }
 }
